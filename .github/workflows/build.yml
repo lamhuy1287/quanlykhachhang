@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   build:
     runs-on: windows-latest
@@ -22,16 +26,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller tkcalendar
 
-      - name: Clean up previous builds
-        run: |
-          echo "Cleaning up previous builds..."
-          rm -rf dist/ build/  # Xóa thư mục dist và build
-
       - name: Build EXE
-        run: pyinstaller main.spec  # Sử dụng main.spec để build
+        run: pyinstaller main.spec
 
       - name: Upload EXE as artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: QuanLyKhachHang
-          path: dist/main.exe  # Đảm bảo đường dẫn chính xác
+          path: dist/main.exe
