@@ -1,0 +1,37 @@
+name: Build Python EXE for Windows
+
+on:
+  push:
+    branches:
+      - main  # Cập nhật nếu bạn dùng nhánh khác ngoài `main`
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest  # Sử dụng môi trường Windows trên GitHub Actions
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'  # Cài đặt Python 3
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller  # Cài PyInstaller để build .exe
+
+    - name: Build EXE
+      run: |
+        pyinstaller --onefile --windowed main.py  # Tạo file .exe
+
+    - name: Upload EXE file
+      uses: actions/upload-artifact@v2
+      with:
+        name: built-exe
+        path: dist/main.exe  # Đường dẫn tới file EXE đã build
