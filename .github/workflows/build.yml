@@ -35,5 +35,5 @@ jobs:
       - name: Upload EXE as artifact
         uses: actions/upload-artifact@v3
         with:
-          name: QuanLyKhachHang
+          name: built-exe
           path: dist/main.exe
