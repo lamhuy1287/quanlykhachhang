@@ -3,7 +3,7 @@ name: Build Python EXE for Windows
 on:
   push:
     branches:
-      - main  # Cập nhật nếu bạn dùng nhánh khác ngoài `main`
+      - main
   pull_request:
     branches:
       - main
@@ -34,4 +34,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: built-exe
-        path: dist/main.exe  # Đường dẫn tới file EXE đã build
+        path: dist/main.exe  # Đảm bảo đường dẫn này đúng và trỏ tới file EXE được tạo ra
