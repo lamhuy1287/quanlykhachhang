@@ -12,13 +12,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Clear cache
-        run: |
-          # Thêm lệnh xóa cache ở đây nếu bạn sử dụng cache để giảm thiểu thời gian build.
-          # Bạn có thể thêm hoặc sửa lại để làm mới cache của các bước trước khi cài đặt lại thư viện.
-          rm -rf ~/.cache/pip  # Xóa cache pip
-          rm -rf ~/.cache/pyinstaller  # Nếu bạn dùng PyInstaller và muốn xóa cache build cũ
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -29,11 +22,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller tkcalendar
 
+      - name: Clean up previous builds
+        run: |
+          echo "Cleaning up previous builds..."
+          rm -rf dist/ build/  # Xóa thư mục dist và build
+
       - name: Build EXE
-        run: pyinstaller main.spec
+        run: pyinstaller main.spec  # Sử dụng main.spec để build
 
       - name: Upload EXE as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
-          name: built-exe
-          path: dist/main.exe
+          name: QuanLyKhachHang
+          path: dist/main.exe  # Đảm bảo đường dẫn chính xác
