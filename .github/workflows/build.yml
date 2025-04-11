@@ -5,8 +5,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
-  actions: read
+  contents: write  # cần để tạo release
 
 jobs:
   build:
@@ -29,8 +28,11 @@ jobs:
       - name: Build EXE
         run: pyinstaller main.spec
 
-      - name: Upload EXE as artifact
-        uses: actions/upload-artifact@a1d7533f3b6b707cd3e7be4b8d5f6671f7c4b5e1
+      - name: Create Release and Upload EXE
+        uses: softprops/action-gh-release@v1
         with:
-          name: QuanLyKhachHang
-          path: dist/main.exe
+          name: "Release - QuanLyKhachHang"
+          tag_name: v1.0.${{ github.run_number }}
+          files: dist/main.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
