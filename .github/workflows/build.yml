@@ -31,7 +31,7 @@ jobs:
         pyinstaller --onefile --windowed main.py  # Tạo file .exe
 
     - name: Upload EXE file
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: built-exe
         path: dist/main.exe  # Đảm bảo đường dẫn này đúng và trỏ tới file EXE được tạo ra
