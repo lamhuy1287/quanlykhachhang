@@ -193,7 +193,7 @@ entry_ngaymua.grid(row=5, column=1)
 frame_right = tk.LabelFrame(frame_main, text="Danh sách khách hàng", padx=10, pady=10)
 frame_right.grid(row=0, column=1)
 
-cols = ("ID", "Tên", "Tiền hàng", "Tiền còn thiếu", "File cart", "Trạng thái", "Ngày mua")
+cols = ("ID", "Tên", "Tiền hàng", "Tiền còn thiếu", "File cart", "Ngày mua", "Trạng thái")
 tree = ttk.Treeview(frame_right, columns=cols, show='headings', height=18)
 for col in cols:
     tree.heading(col, text=col)
