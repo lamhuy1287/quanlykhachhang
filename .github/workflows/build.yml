@@ -2,31 +2,38 @@ name: Build EXE
 
 on:
   push:
-    branches: [main]  # Chạy khi có commit lên nhánh main
+    branches: [main]
 
 jobs:
   build:
-    runs-on: windows-latest  # Chạy trên môi trường Windows
+    runs-on: windows-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3  # Lấy mã nguồn từ repository
+        uses: actions/checkout@v3
+
+      - name: Clear cache
+        run: |
+          # Thêm lệnh xóa cache ở đây nếu bạn sử dụng cache để giảm thiểu thời gian build.
+          # Bạn có thể thêm hoặc sửa lại để làm mới cache của các bước trước khi cài đặt lại thư viện.
+          rm -rf ~/.cache/pip  # Xóa cache pip
+          rm -rf ~/.cache/pyinstaller  # Nếu bạn dùng PyInstaller và muốn xóa cache build cũ
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'  # Thiết lập phiên bản Python cần thiết
+          python-version: '3.11'
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip  # Cập nhật pip
-          pip install pyinstaller tkcalendar  # Cài đặt PyInstaller và tkcalendar
+          python -m pip install --upgrade pip
+          pip install pyinstaller tkcalendar
 
       - name: Build EXE
-        run: pyinstaller main.spec  # Build từ file spec, đảm bảo bạn có file main.spec
+        run: pyinstaller main.spec
 
       - name: Upload EXE as artifact
         uses: actions/upload-artifact@v3
         with:
-          name: QuanLyKhachHang  # Tên artifact khi tải lên
-          path: dist/main.exe  # Đảm bảo đường dẫn và tên file .exe chính xác sau khi build
+          name: QuanLyKhachHang
+          path: dist/main.exe
