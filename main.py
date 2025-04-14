@@ -6,6 +6,8 @@ from PIL import Image, ImageTk
 import os
 from io import BytesIO
 from datetime import datetime
+import subprocess
+import platform
 
 # Khởi tạo CSDL
 def init_db():
@@ -125,7 +127,6 @@ class ProductManager:
         tk.Button(toolbar, text="Xóa sản phẩm", command=self.delete_product).pack(side="left", padx=5)
         tk.Button(toolbar, text="Quay lại", command=lambda: MainApp(self.root)).pack(side="right", padx=5)
         
-        # Thêm ô tìm kiếm
         tk.Label(toolbar, text="Tìm kiếm:").pack(side="left", padx=5)
         self.search_var = tk.StringVar()
         tk.Entry(toolbar, textvariable=self.search_var).pack(side="left", padx=5)
@@ -477,7 +478,6 @@ class OrderManager:
         tk.Button(toolbar, text="Xóa đơn hàng", command=self.delete_order).pack(side="left", padx=5)
         tk.Button(toolbar, text="Quay lại", command=lambda: MainApp(self.root)).pack(side="right", padx=5)
         
-        # Thêm ô tìm kiếm
         tk.Label(toolbar, text="Tìm kiếm:").pack(side="left", padx=5)
         self.search_var = tk.StringVar()
         tk.Entry(toolbar, textvariable=self.search_var).pack(side="left", padx=5)
@@ -497,6 +497,43 @@ class OrderManager:
         scrollbar = ttk.Scrollbar(self.tree, orient="vertical", command=self.tree.yview)
         scrollbar.pack(side="right", fill="y")
         self.tree.configure(yscrollcommand=scrollbar.set)
+        
+        # Gắn sự kiện click vào cột "File SP"
+        self.tree.bind("<Double-1>", self.open_file)
+    
+    def open_file(self, event):
+        # Xác định vị trí click
+        region = self.tree.identify("region", event.x, event.y)
+        if region != "cell":
+            return
+        
+        # Lấy cột được click
+        column = self.tree.identify_column(event.x)
+        column_index = int(column.replace("#", "")) - 1
+        if self.tree["columns"][column_index] != "File SP":
+            return
+        
+        # Lấy dòng được chọn
+        selected = self.tree.selection()
+        if not selected:
+            return
+        
+        # Lấy đường dẫn file từ dòng được chọn
+        item = self.tree.item(selected[0])
+        file_path = item["values"][5]  # Cột "File SP" là cột thứ 6 (index 5)
+        
+        if not file_path or not os.path.exists(file_path):
+            messagebox.showwarning("Cảnh báo", "File không tồn tại hoặc chưa được chọn!")
+            return
+        
+        try:
+            if platform.system() == "Windows":
+                os.startfile(file_path)
+            else:
+                opener = "open" if platform.system() == "Darwin" else "xdg-open"
+                subprocess.run([opener, file_path])
+        except Exception as e:
+            messagebox.showerror("Lỗi", f"Không thể mở file: {str(e)}")
     
     def load_orders(self):
         for item in self.tree.get_children():
