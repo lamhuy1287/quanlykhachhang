@@ -125,6 +125,13 @@ class ProductManager:
         tk.Button(toolbar, text="Xóa sản phẩm", command=self.delete_product).pack(side="left", padx=5)
         tk.Button(toolbar, text="Quay lại", command=lambda: MainApp(self.root)).pack(side="right", padx=5)
         
+        # Thêm ô tìm kiếm
+        tk.Label(toolbar, text="Tìm kiếm:").pack(side="left", padx=5)
+        self.search_var = tk.StringVar()
+        tk.Entry(toolbar, textvariable=self.search_var).pack(side="left", padx=5)
+        tk.Button(toolbar, text="Tìm", command=self.search_products).pack(side="left", padx=5)
+        tk.Button(toolbar, text="Hủy tìm kiếm", command=self.load_products).pack(side="left", padx=5)
+        
         columns = ("ID", "Mã SP", "Tên SP", "Ảnh", "Giá nhập", "Giá bán", "Số lượng")
         self.tree = ttk.Treeview(main_frame, columns=columns, show="headings", height=20)
         
@@ -155,6 +162,39 @@ class ProductManager:
         with sqlite3.connect("quanlybanhang.db") as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT id, ma_sp, ten_sp, anh_sp, gia_nhap, gia_ban, so_luong FROM sanpham")
+            products = cursor.fetchall()
+        
+        for product in products:
+            img_data = product[3]
+            img_preview = "Nhấn đúp 2 lần để xem hình ảnh" if img_data and not isinstance(img_data, str) else "Không có ảnh"
+            if img_data and not isinstance(img_data, str):
+                img = ImageManager.blob_to_image(img_data)
+                if img:
+                    self.image_references.append(img)
+            
+            self.tree.insert("", "end", values=(
+                product[0], product[1], product[2], 
+                img_preview,
+                f"{product[4]:,.0f}đ", 
+                f"{product[5]:,.0f}đ", 
+                product[6]
+            ))
+    
+    def search_products(self):
+        query = self.search_var.get().strip().lower()
+        if not query:
+            self.load_products()
+            return
+        
+        self.image_references.clear()
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        
+        with sqlite3.connect("quanlybanhang.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, ma_sp, ten_sp, anh_sp, gia_nhap, gia_ban, so_luong FROM sanpham "
+                          "WHERE LOWER(ma_sp) LIKE ? OR LOWER(ten_sp) LIKE ?",
+                          (f"%{query}%", f"%{query}%"))
             products = cursor.fetchall()
         
         for product in products:
@@ -283,7 +323,6 @@ class ProductManager:
                                (ma_sp, ten_sp, img_blob, gia_nhap, gia_ban, so_luong))
                 conn.commit()
             
-            messagebox.showinfo("Thành công", "Thêm sản phẩm thành công!")
             self.dialog.destroy()
             self.load_products()
         
@@ -385,7 +424,6 @@ class ProductManager:
                                (ma_sp, ten_sp, img_blob, gia_nhap, gia_ban, so_luong, self.edit_id))
                 conn.commit()
             
-            messagebox.showinfo("Thành công", "Cập nhật sản phẩm thành công!")
             self.dialog.destroy()
             self.load_products()
         
@@ -411,7 +449,7 @@ class ProductManager:
                     cursor = conn.cursor()
                     cursor.execute("DELETE FROM sanpham WHERE id=?", (product_id,))
                     conn.commit()
-                messagebox.showinfo("Thành công", "Xóa sản phẩm thành công!")
+                
                 self.load_products()
             except sqlite3.Error as e:
                 messagebox.showerror("Lỗi", f"Có lỗi xảy ra: {str(e)}")
@@ -439,6 +477,13 @@ class OrderManager:
         tk.Button(toolbar, text="Xóa đơn hàng", command=self.delete_order).pack(side="left", padx=5)
         tk.Button(toolbar, text="Quay lại", command=lambda: MainApp(self.root)).pack(side="right", padx=5)
         
+        # Thêm ô tìm kiếm
+        tk.Label(toolbar, text="Tìm kiếm:").pack(side="left", padx=5)
+        self.search_var = tk.StringVar()
+        tk.Entry(toolbar, textvariable=self.search_var).pack(side="left", padx=5)
+        tk.Button(toolbar, text="Tìm", command=self.search_orders).pack(side="left", padx=5)
+        tk.Button(toolbar, text="Hủy tìm kiếm", command=self.load_orders).pack(side="left", padx=5)
+        
         columns = ("ID", "Tên KH", "Danh mục", "Ngày đặt", "Ngày giao", "File SP",
                    "Tổng tiền", "Đã cọc", "Còn thiếu", "Trạng thái")
         self.tree = ttk.Treeview(main_frame, columns=columns, show="headings", height=20)
@@ -461,6 +506,29 @@ class OrderManager:
             cursor = conn.cursor()
             cursor.execute("SELECT id, ten_kh, danh_muc, ngay_dat, ngay_giao, file_sp, "
                           "tong_tien, da_coc, con_thieu, trang_thai FROM khachhang")
+            orders = cursor.fetchall()
+        
+        for order in orders:
+            self.tree.insert("", "end", values=(
+                order[0], order[1], order[2], order[3], order[4], order[5],
+                f"{order[6]:,.0f}đ", f"{order[7]:,.0f}đ", f"{order[8]:,.0f}đ", order[9]
+            ))
+    
+    def search_orders(self):
+        query = self.search_var.get().strip().lower()
+        if not query:
+            self.load_orders()
+            return
+        
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        
+        with sqlite3.connect("quanlybanhang.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, ten_kh, danh_muc, ngay_dat, ngay_giao, file_sp, "
+                          "tong_tien, da_coc, con_thieu, trang_thai FROM khachhang "
+                          "WHERE LOWER(ten_kh) LIKE ? OR LOWER(danh_muc) LIKE ?",
+                          (f"%{query}%", f"%{query}%"))
             orders = cursor.fetchall()
         
         for order in orders:
@@ -549,7 +617,6 @@ class OrderManager:
                                 tong_tien, da_coc, self.trang_thai.get()))
                 conn.commit()
             
-            messagebox.showinfo("Thành công", "Thêm đơn hàng thành công!")
             self.dialog.destroy()
             self.load_orders()
         
@@ -581,7 +648,6 @@ class OrderManager:
         def do_update():
             new_status = status_var.get()
             if new_status == current_status:
-                messagebox.showinfo("Thông báo", "Trạng thái không thay đổi!")
                 dialog.destroy()
                 return
             
@@ -590,7 +656,7 @@ class OrderManager:
                     cursor = conn.cursor()
                     cursor.execute("UPDATE khachhang SET trang_thai=? WHERE id=?", (new_status, order_id))
                     conn.commit()
-                messagebox.showinfo("Thành công", "Cập nhật trạng thái thành công!")
+                
                 dialog.destroy()
                 self.load_orders()
             except sqlite3.Error as e:
