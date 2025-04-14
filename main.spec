@@ -1,20 +1,26 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+block_cipher = None
 
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
     datas=[],
-    hiddenimports=['tkcalendar'],
+    hiddenimports=[
+        'tkcalendar',
+        'PIL.Image',
+        'PIL.ImageTk',
+        'PIL._tkinter_finder'
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
     excludes=[],
-    noarchive=False,
-    optimize=0,
+    noarchive=False
 )
-pyz = PYZ(a.pure)
+
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(
     pyz,
@@ -31,14 +37,14 @@ exe = EXE(
     runtime_tmpdir=None,
     console=False,
     disable_windowed_traceback=False,
-    argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
-    entitlements_file=None,
+    entitlements_file=None
 )
+
 app = BUNDLE(
     exe,
     name='main.app',
     icon=None,
-    bundle_identifier=None,
+    bundle_identifier=None
 )
