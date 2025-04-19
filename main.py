@@ -1,3 +1,4 @@
+
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from tkcalendar import DateEntry
@@ -474,6 +475,7 @@ class OrderManager:
         toolbar.pack(fill="x", pady=10)
         
         tk.Button(toolbar, text="Thêm đơn hàng", command=self.add_order_dialog).pack(side="left", padx=5)
+        tk.Button(toolbar, text="Sửa đơn hàng", command=self.edit_order).pack(side="left", padx=5)
         tk.Button(toolbar, text="Cập nhật trạng thái", command=self.update_status).pack(side="left", padx=5)
         tk.Button(toolbar, text="Xóa đơn hàng", command=self.delete_order).pack(side="left", padx=5)
         tk.Button(toolbar, text="Quay lại", command=lambda: MainApp(self.root)).pack(side="right", padx=5)
@@ -498,29 +500,24 @@ class OrderManager:
         scrollbar.pack(side="right", fill="y")
         self.tree.configure(yscrollcommand=scrollbar.set)
         
-        # Gắn sự kiện click vào cột "File SP"
         self.tree.bind("<Double-1>", self.open_file)
     
     def open_file(self, event):
-        # Xác định vị trí click
         region = self.tree.identify("region", event.x, event.y)
         if region != "cell":
             return
         
-        # Lấy cột được click
         column = self.tree.identify_column(event.x)
         column_index = int(column.replace("#", "")) - 1
         if self.tree["columns"][column_index] != "File SP":
             return
         
-        # Lấy dòng được chọn
         selected = self.tree.selection()
         if not selected:
             return
         
-        # Lấy đường dẫn file từ dòng được chọn
         item = self.tree.item(selected[0])
-        file_path = item["values"][5]  # Cột "File SP" là cột thứ 6 (index 5)
+        file_path = item["values"][5]
         
         if not file_path or not os.path.exists(file_path):
             messagebox.showwarning("Cảnh báo", "File không tồn tại hoặc chưa được chọn!")
@@ -652,6 +649,108 @@ class OrderManager:
                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
                                (ten_kh, danh_muc, ngay_dat, ngay_giao, self.file_sp.get(), 
                                 tong_tien, da_coc, self.trang_thai.get()))
+                conn.commit()
+            
+            self.dialog.destroy()
+            self.load_orders()
+        
+        except tk.TclError:
+            messagebox.showerror("Lỗi", "Vui lòng nhập số tiền hợp lệ!")
+        except ValueError as e:
+            messagebox.showerror("Lỗi", str(e))
+        except Exception as e:
+            messagebox.showerror("Lỗi", f"Có lỗi xảy ra: {str(e)}")
+    
+    def edit_order(self):
+        selected = self.tree.selection()
+        if not selected:
+            messagebox.showwarning("Cảnh báo", "Vui lòng chọn đơn hàng cần sửa!")
+            return
+        
+        order_id = self.tree.item(selected[0])['values'][0]
+        with sqlite3.connect("quanlybanhang.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM khachhang WHERE id=?", (order_id,))
+            order = cursor.fetchone()
+        
+        if not order:
+            messagebox.showerror("Lỗi", "Không tìm thấy đơn hàng!")
+            return
+        
+        self.dialog = tk.Toplevel(self.root)
+        self.dialog.title("Chỉnh sửa đơn hàng")
+        self.dialog.grab_set()
+        
+        self.edit_id = order_id
+        self.ten_kh = tk.StringVar(value=order[1])
+        self.danh_muc = tk.StringVar(value=order[2])
+        self.ngay_dat = tk.StringVar(value=order[3])
+        self.ngay_giao = tk.StringVar(value=order[4] if order[4] else "")
+        self.file_sp = tk.StringVar(value=order[5] if order[5] else "")
+        self.tong_tien = tk.DoubleVar(value=order[6])
+        self.da_coc = tk.DoubleVar(value=order[7])
+        self.trang_thai = tk.StringVar(value=order[9])
+        
+        tk.Label(self.dialog, text="Tên khách hàng:").grid(row=0, column=0, padx=5, pady=5, sticky="e")
+        tk.Entry(self.dialog, textvariable=self.ten_kh).grid(row=0, column=1, padx=5, pady=5)
+        
+        tk.Label(self.dialog, text="Danh mục hàng:").grid(row=1, column=0, padx=5, pady=5, sticky="e")
+        tk.Entry(self.dialog, textvariable=self.danh_muc).grid(row=1, column=1, padx=5, pady=5)
+        
+        tk.Label(self.dialog, text="Ngày đặt hàng:").grid(row=2, column=0, padx=5, pady=5, sticky="e")
+        DateEntry(self.dialog, textvariable=self.ngay_dat, date_pattern='dd/mm/yyyy').grid(row=2, column=1, padx=5, pady=5)
+        
+        tk.Label(self.dialog, text="Ngày giao hàng:").grid(row=3, column=0, padx=5, pady=5, sticky="e")
+        DateEntry(self.dialog, textvariable=self.ngay_giao, date_pattern='dd/mm/yyyy').grid(row=3, column=1, padx=5, pady=5)
+        
+        tk.Label(self.dialog, text="File sản phẩm:").grid(row=4, column=0, padx=5, pady=5, sticky="e")
+        tk.Entry(self.dialog, textvariable=self.file_sp, state="readonly").grid(row=4, column=1, padx=5, pady=5)
+        tk.Button(self.dialog, text="Chọn file", command=self.select_file).grid(row=4, column=2, padx=5, pady=5)
+        
+        tk.Label(self.dialog, text="Tổng tiền:").grid(row=5, column=0, padx=5, pady=5, sticky="e")
+        tk.Entry(self.dialog, textvariable=self.tong_tien).grid(row=5, column=1, padx=5, pady=5)
+        
+        tk.Label(self.dialog, text="Đã cọc:").grid(row=6, column=0, padx=5, pady=5, sticky="e")
+        tk.Entry(self.dialog, textvariable=self.da_coc).grid(row=6, column=1, padx=5, pady=5)
+        
+        tk.Label(self.dialog, text="Trạng thái:").grid(row=7, column=0, padx=5, pady=5, sticky="e")
+        ttk.Combobox(self.dialog, textvariable=self.trang_thai,
+                     values=["đang đặt", "đã về", "đã giao"], state="readonly").grid(row=7, column=1, padx=5, pady=5)
+        
+        btn_frame = tk.Frame(self.dialog)
+        btn_frame.grid(row=8, column=0, columnspan=3, pady=10)
+        
+        tk.Button(btn_frame, text="Cập nhật", command=self.update_order).pack(side="left", padx=10)
+        tk.Button(btn_frame, text="Hủy", command=self.dialog.destroy).pack(side="left", padx=10)
+    
+    def update_order(self):
+        try:
+            ten_kh = self.ten_kh.get().strip()
+            danh_muc = self.danh_muc.get().strip()
+            ngay_dat = self.ngay_dat.get()
+            ngay_giao = self.ngay_giao.get()
+            tong_tien = self.tong_tien.get()
+            da_coc = self.da_coc.get()
+            
+            if not ten_kh or not danh_muc or not ngay_dat:
+                raise ValueError("Vui lòng nhập đầy đủ thông tin bắt buộc!")
+            if tong_tien < 0 or da_coc < 0:
+                raise ValueError("Tiền không được âm!")
+            if da_coc > tong_tien:
+                raise ValueError("Số tiền cọc không được lớn hơn tổng tiền!")
+            if ngay_giao:
+                date_format = "%d/%m/%Y"
+                if datetime.strptime(ngay_giao, date_format) < datetime.strptime(ngay_dat, date_format):
+                    raise ValueError("Ngày giao phải sau ngày đặt!")
+            
+            with sqlite3.connect("quanlybanhang.db") as conn:
+                cursor = conn.cursor()
+                cursor.execute('''UPDATE khachhang SET
+                               ten_kh=?, danh_muc=?, ngay_dat=?, ngay_giao=?, file_sp=?,
+                               tong_tien=?, da_coc=?, trang_thai=?
+                               WHERE id=?''',
+                               (ten_kh, danh_muc, ngay_dat, ngay_giao, self.file_sp.get(),
+                                tong_tien, da_coc, self.trang_thai.get(), self.edit_id))
                 conn.commit()
             
             self.dialog.destroy()
